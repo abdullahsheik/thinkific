@@ -1,11 +1,13 @@
 # Use official Ruby image as base
-FROM ruby:2.6.3-alpine AS base
+FROM ruby:2.6.3-alpine
 
 # Install system dependencies
 RUN apk add --no-cache \
     build-base \
     postgresql-dev \
     postgresql-client \
+    sqlite-dev \
+    shared-mime-info \
     tzdata \
     nodejs \
     yarn \
@@ -13,6 +15,10 @@ RUN apk add --no-cache \
 
 # Set working directory
 WORKDIR /app
+
+# Set environment variables to handle mimemagic issues
+ENV USE_FREEDESKTOP_PLACEHOLDER=true
+ENV FREEDESKTOP_MIME_TYPES_PATH=/usr/share/mime/packages/freedesktop.org.xml
 
 # Copy Gemfile and install dependencies
 COPY Gemfile Gemfile.lock ./
@@ -22,31 +28,6 @@ RUN bundle config set --local deployment 'true' \
 
 # Copy application code
 COPY . .
-
-# Precompile assets (if any)
-RUN bundle exec rake assets:precompile RAILS_ENV=production
-
-# Create production stage
-FROM ruby:2.6.3-alpine AS production
-
-# Install runtime dependencies
-RUN apk add --no-cache \
-    postgresql-dev \
-    postgresql-client \
-    tzdata \
-    nodejs
-
-# Set working directory
-WORKDIR /app
-
-# Copy vendor bundle from base stage
-COPY --from=base /app/vendor/bundle /app/vendor/bundle
-
-# Copy application code
-COPY . .
-
-# Copy precompiled assets
-COPY --from=base /app/public/assets /app/public/assets
 
 # Set environment variables
 ENV RAILS_ENV=production

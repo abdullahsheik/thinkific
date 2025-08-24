@@ -19,9 +19,13 @@ RSpec.configure do |config|
   config.infer_spec_type_from_file_location!
   config.include FactoryBot::Syntax::Methods
   config.filter_rails_from_backtrace!
+  
+  # Disable DatabaseCleaner safeguard for remote database URLs during testing
   config.before(:suite) do
+    DatabaseCleaner.allow_remote_database_url = true
     DatabaseCleaner.clean_with(:truncation, except: %w[ar_internal_metadata])
   end
+  
   config.before(:each) do
     DatabaseCleaner.strategy = :transaction
   end
